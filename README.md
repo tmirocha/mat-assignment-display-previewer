@@ -1,6 +1,6 @@
 # Mat Assignment Display — Previewer
 
-A preview and development tool for building custom mat assignment display layouts for [Trackwrestling](https://www.trackwrestling.com). Design your card template and stylesheet locally, then export production-ready HTML and CSS to plug into Trackwrestling's `MatAssignmentDisplay.jsp` system.
+A preview and development tool for building custom mat assignment display layouts for [Trackwrestling](https://github.com/flocasts/trackwrestling). Design your card template and stylesheet locally, then export production-ready HTML and CSS to plug into Trackwrestling's `MatAssignmentDisplay.jsp` system.
 
 The included card template and stylesheet are a **sample layout** — a starting point meant to be replaced with your own design.
 
