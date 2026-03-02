@@ -1,10 +1,12 @@
 # Mat Assignment Display — Previewer
 
-NCAA wrestling mat assignment display — a card-based layout system for showing live match information across multiple mats on large screens and broadcast displays.
+A preview and development tool for building custom mat assignment display layouts for [Trackwrestling](https://www.trackwrestling.com). Design your card template and stylesheet locally, then export production-ready HTML and CSS to plug into Trackwrestling's `MatAssignmentDisplay.jsp` system.
 
-Built as a standalone previewer that exports production-ready HTML and CSS for use in the [Trackwrestling](https://www.trackwrestling.com) webapp.
+The included card template and stylesheet are a **sample layout** — a starting point meant to be replaced with your own design.
 
-## Quick start
+## Getting started
+
+### 1. Serve the previewer
 
 No build step required. Serve the `src/` directory with any static file server:
 
@@ -14,6 +16,59 @@ cd src && python3 -m http.server 8080
 
 Open `http://localhost:8080` to launch the preview environment.
 
+### 2. Create your layout
+
+The previewer loads two files that define the display layout:
+
+| File | Purpose |
+|------|---------|
+| `src/card-template.html` | The HTML for a single mat card. Uses `[token]` placeholders that Trackwrestling fills with live match data. |
+| `src/styles.css` | The stylesheet for the card layout. Exported alongside the HTML. |
+
+These ship with a sample layout to demonstrate the token system and CSS structure. Replace them with your own:
+
+**card-template.html** — Build your card markup using [template tokens](#template-tokens). The outermost element must have class `outer-frame`. Wrap it in a single root `<div>`:
+
+```html
+<div class="outer-frame" data-upcoming-depth="[upcomingDepth]">
+  <div class="match-card">
+    <div class="mat-name">[mat]</div>
+    <div class="wrestler">[w1FirstName] [w1LastName] — [w1Team]</div>
+    <div class="wrestler">[w2FirstName] [w2LastName] — [w2Team]</div>
+    <!-- ...your layout here -->
+  </div>
+</div>
+```
+
+**styles.css** — Write your card styles. The previewer and production system both use these CSS custom properties:
+
+| Property | Description |
+|----------|-------------|
+| `--columns` | Grid column count. Exported as the `[columns]` placeholder for the JSP. |
+| `--rows` | Row count, set at runtime. Useful for responsive layout breakpoints. |
+| `--upcoming-bars` | Number of visible upcoming bout bars (0–2). |
+
+### 3. Preview and iterate
+
+Use the toolbar controls to test your layout at different mat counts, column configurations, and aspect ratios. The previewer fills your template with randomized mock data so you can see how it looks with realistic content.
+
+### 4. Export to Trackwrestling
+
+1. Click **Export HTML** — copies your card template to the clipboard
+2. Click **Export CSS** — copies your stylesheet to the clipboard
+3. In Trackwrestling admin, open the Mat Assignment Display layout editor (`EditMADLayout.jsp`)
+4. Paste the HTML and CSS into the appropriate fields
+5. Save — the layout is stored in the database and served on the live display page
+
+### Background assets
+
+The previewer references background files from `src/assets/backgrounds/` (gitignored). To use the preview background:
+
+1. Place a `background.png` (poster) and `background.mp4` (video) in `src/assets/backgrounds/`
+2. Or remove the `<video>` tag from `src/index.html` if you don't need a background
+
+In production, the exported HTML references backgrounds from S3 via the `BG_VIDEO` constant in `src/js/template.js`. Update that path to match your hosting setup.
+
 ## Preview controls
 
 | Control | Description |
@@ -22,47 +77,38 @@ Open `http://localhost:8080` to launch the preview environment.
 | **Columns** | Grid column count (1–4) |
 | **Upcoming** | How many upcoming bout bars to show per card (0–2) |
 | **Screen** | Aspect ratio safe-area preview (Fill, 16:9, 4:3, 21:9, etc.) |
+| **Team Scores** | Toggle team scores marquee bar |
 | **Randomize Data** | Generate new mock wrestlers, teams, and scores |
 | **Simulate Score** | Trigger a random score change to preview animations |
+| **Simulate Redraw** | Mimic production innerHTML replacement cycle |
 | **Export HTML / CSS** | Copy production-ready template or stylesheet to clipboard |
 
-## How it works
+## Template tokens
 
-Each mat is rendered from a single card template (`card-template.html`) containing placeholder tokens like `[mat]`, `[w1FirstName]`, `[w1Score]`, etc. The preview fills these with mock data; in production, the Trackwrestling server fills them with live match data.
+Tokens use square bracket syntax: `[tokenName]`. Append `:N` for max character truncation (e.g., `[w1FirstName:10]`).
 
-### Card anatomy
+### Current bout
 
-```
-┌─────────────────────────────────┐
-│ MAT 1              Quarterfinal │  ← Header bar (mat number + rotating bout info)
-├─────────────────────────────────┤
-│ █ #3 J. SMITH  Penn State   12 │  ← Wrestler 1 (color bar, seed, name, team, score)
-│ █ #6 A. JONES  Iowa          8 │  ← Wrestler 2
-│                  P2  4:32  0:24│  ← Clock panel (period, time, riding time)
-├─────────────────────────────────┤
-│ On Deck    A. Lee (PSU) vs ... │  ← Upcoming bout 1
-│ In Hole    B. Fox (IOW) vs ... │  ← Upcoming bout 2
-└─────────────────────────────────┘
-```
+| Token | Example | Description |
+|-------|---------|-------------|
+| `[mat]` | Mat 1 | Mat name |
+| `[boutType]` | Quarterfinal | Bout round type |
+| `[boutNo]` | 42 | Bout number |
+| `[weight]` | 165 | Weight class |
+| `[w1FirstName]` | John | Wrestler 1 first name |
+| `[w1LastName]` | Smith | Wrestler 1 last name |
+| `[w1Team]` | Penn State | Wrestler 1 team name |
+| `[w1TeamAbbr]` | PSU | Wrestler 1 team abbreviation |
+| `[w1Seed]` | 3 | Wrestler 1 seed |
+| `[w1Score]` | 12 | Wrestler 1 score |
+| `[w1Color]` | #CC0000 | Wrestler 1 color bar hex |
+| `[periodName]` | Period 2 | Current period |
+| `[clockTime]` | 4:32 | Match clock |
+| `[ridingTime]` | 0:24 | Riding time |
 
-### Score animations
+All `w1` tokens have `w2` equivalents. Prefix tokens with `ondeck-` or `inhole-` for upcoming bouts (e.g., `[ondeck-w1FirstName]`, `[inhole-weight]`).
 
-When a wrestler's score changes, the system triggers a cascade of visual effects: score box flash and glow, expanding ring, delta overlay (+N), row highlight sweep, and color bar flash. In the preview, `score-animation.js` polls for changes. In production, a self-bootstrapping script embedded in the card template handles this.
-
-## Trackwrestling integration
-
-The exported HTML and CSS are designed to be pasted into Trackwrestling's `EditMADLayout.jsp`, which stores them as a custom layout for `MatAssignmentDisplay.jsp`.
-
-### Export and deploy workflow
-
-1. Configure the display in the preview (mat count, columns, upcoming depth)
-2. Click **Export HTML** — copies the card template to clipboard
-3. Click **Export CSS** — copies the stylesheet to clipboard
-4. In Trackwrestling admin, open the Mat Assignment Display settings
-5. Select or create a custom layout and paste the HTML and CSS
-6. Save — the layout is stored in the database and used on the live display page
-
-### How production rendering works
+## How production rendering works
 
 ```
 MatAssignmentDisplay.jsp
@@ -71,59 +117,31 @@ MatAssignmentDisplay.jsp
   ↓ polls GetAssignedMatches.jsp for live match data (every 30s)
   ↓ for each match, replaceCodes() fills [w1FirstName], [mat], [w1Score], etc.
   ↓ assembled HTML inserted into #matAssignDisplayFrame
-  ↓ <img onerror> bootstrap initializes score animations + derives data-rows
   ↓ clock/score polling updates elements in-place (500ms–5s intervals)
 ```
 
-### Template tokens
+## Score animations
 
-Tokens use square bracket syntax. Append `:N` for max character truncation.
+The sample layout includes a score animation system. When a wrestler's score changes, it triggers visual effects (score box flash, expanding ring, delta overlay, row highlight). Two implementations exist:
 
-| Token | Example output | Description |
-|-------|---------------|-------------|
-| `[mat]` | Mat 1 | Mat name |
-| `[boutType]` | Quarterfinal | Bout round type |
-| `[boutNo]` | 42 | Bout number |
-| `[weight]` | 165 | Weight class |
-| `[w1FirstName:10]` | John | Wrestler 1 first name (max 10 chars) |
-| `[w1LastName:16]` | Smith | Wrestler 1 last name |
-| `[w1Team:25]` | Penn State | Wrestler 1 team name |
-| `[w1TeamAbbr]` | PSU | Wrestler 1 team abbreviation |
-| `[w1Seed]` | 3 | Wrestler 1 seed |
-| `[w1Score]` | 12 | Wrestler 1 score |
-| `[w1Color]` | #CC0000 | Wrestler 1 color bar |
-| `[periodName]` | Period 2 | Current period |
-| `[clockTime]` | 4:32 | Match clock |
-| `[ridingTime]` | 0:24 | Riding time |
+- **Preview**: `score-animation.js` polls for `.wScore` element changes
+- **Production**: A self-bootstrapping `<img onerror>` script embedded in `card-template.html` handles the same detection
 
-Prefix tokens with `ondeck-` or `inhole-` for upcoming bouts (e.g., `[ondeck-w1FirstName]`).
+If your custom layout doesn't need score animations, you can omit the `<img onerror>` bootstrap from your card template.
 
 ## Project structure
 
 ```
 src/
-├── index.html            # Preview environment
-├── card-template.html    # Production card template
-├── styles.css            # Production stylesheet
-├── preview.css           # Preview-only styles
+├── card-template.html    ← Your card template (sample included)
+├── styles.css            ← Your stylesheet (sample included)
+├── index.html            # Previewer entry point
+├── preview.css           # Previewer-only styles (not exported)
 ├── js/
-│   ├── app.js            # Preview controller
-│   ├── template.js       # Token replacement engine
+│   ├── app.js            # Previewer controller
+│   ├── template.js       # Token replacement and export helpers
 │   ├── data.js           # Mock data generation
-│   └── score-animation.js
+│   └── score-animation.js# Score change detection (preview)
 └── assets/
-    ├── backgrounds/      # Video + poster (S3-hosted in prod)
-    └── fonts/            # United Sans family (S3-hosted in prod)
+    └── backgrounds/      # Local preview backgrounds (gitignored)
 ```
-
-## CSS custom properties
-
-The stylesheet uses CSS custom properties for dynamic layout control:
-
-| Property | Default | Description |
-|----------|---------|-------------|
-| `--columns` | `1` | Grid columns. Exported as `[columns]` placeholder. |
-| `--rows` | — | Set at runtime. Controls stacked vs inline team name layout. |
-| `--upcoming-bars` | — | Number of visible upcoming bout bars (0–2). |
-
-All card sizing uses `em` units relative to `.outer-frame` font-size, which scales based on `--columns` and viewport/container dimensions.

@@ -2,24 +2,25 @@
 
 ## Project overview
 
-Preview/development tool for building NCAA wrestling mat assignment display layouts. Outputs production-ready HTML and CSS that gets pasted into the Trackwrestling webapp's `MatAssignmentDisplay.jsp` via `EditMADLayout.jsp`.
+Preview/development tool for building custom mat assignment display layouts for Trackwrestling. Outputs production-ready HTML and CSS that gets pasted into the Trackwrestling webapp's `MatAssignmentDisplay.jsp` via `EditMADLayout.jsp`.
+
+The included `card-template.html` and `styles.css` are a **sample layout** — a starting point meant to be replaced with a custom design.
 
 ## Architecture
 
 ```
 src/
-  index.html            # Preview environment entry point
-  card-template.html    # Production card template (exported artifact)
-  styles.css            # Production CSS (exported artifact)
-  preview.css           # Preview-only overrides (not exported)
+  index.html            # Previewer entry point
+  card-template.html    # Card template — sample included (exported artifact)
+  styles.css            # Stylesheet — sample included (exported artifact)
+  preview.css           # Previewer-only overrides (not exported)
   js/
-    app.js              # Preview controller, rendering, export, settings
+    app.js              # Previewer controller, rendering, export, settings
     template.js         # Template token replacement, export helpers
     data.js             # Mock data generation (teams, wrestlers, scores)
     score-animation.js  # Score change detection and animation (preview watcher)
   assets/
     backgrounds/        # Local preview backgrounds (S3-hosted in production)
-    fonts/              # United Sans font files (S3-hosted in production)
 ```
 
 ## Key concepts
@@ -43,7 +44,7 @@ Card template uses `[tokenName]` placeholders (e.g., `[w1FirstName]`, `[mat]`, `
 4. JSP stores in `tbl_*_mad_layouts`, retrieves on page load, applies `[columns]` substitution
 
 ### data-rows derivation
-Row count determines stacked vs inline team name layout (< 6 rows = stacked). Derived at runtime:
+Row count determines layout breakpoints (e.g., stacked vs inline team names in the sample). Derived at runtime:
 - **Preview**: `app.js` sets `data-rows` on each `.outer-frame` after rendering
 - **Production**: `<img onerror>` bootstrap computes `Math.ceil(frames.length / [columns])` and stamps each `.outer-frame`
 
