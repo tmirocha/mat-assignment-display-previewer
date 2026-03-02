@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+
+# Reference materials (not part of the project)
+ncaa-toolkit/
+
+# Binary assets (hosted on S3, local copies for preview only)
+src/assets/
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Editor
+.vscode/
+*.swp
+*~

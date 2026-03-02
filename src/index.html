@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mat Assignment Display — Previewer</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="preview.css">
+</head>
+<body>
+
+<!-- PREVIEW CONTROLS -->
+<div class="preview-controls">
+	<span class="title">Mat Display v2 Preview</span>
+	<label>Mats:
+		<input type="number" id="matCount" value="4" min="1" max="8">
+	</label>
+	<label>Columns:
+		<input type="number" id="colCount" value="2" min="1" max="4">
+	</label>
+	<label>Upcoming:
+		<input type="number" id="upcomingDepth" value="2" min="0" max="2">
+	</label>
+	<label>Screen:
+		<select id="aspectRatio">
+			<option value="fill">Fill Window</option>
+			<option value="16:9">16:9 (HD / 4K)</option>
+			<option value="16:10">16:10</option>
+			<option value="4:3">4:3</option>
+			<option value="21:9">21:9 (Ultrawide)</option>
+			<option value="32:9">32:9 (Super Ultrawide)</option>
+		</select>
+	</label>
+	<label><input type="checkbox" id="teamScores"> Team Scores</label>
+	<button id="btnRandomize">Randomize Data</button>
+	<button id="btnSimulate">Simulate Score</button>
+	<button id="btnRedraw">Simulate Redraw</button>
+	<span class="export-sep">|</span>
+	<button id="btnExportHTML">Export HTML</button>
+	<button id="btnExportCSS">Export CSS</button>
+	<span class="export-sep">|</span>
+	<button id="btnReset">Reset</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="safe-area-label" id="safeAreaLabel"></div>
+
+<!-- GRID CONTAINER -->
+<main class="preview-main">
+<video class="bg-video" autoplay loop muted playsinline poster="assets/backgrounds/background.png">
+	<source src="assets/backgrounds/background.mp4" type="video/mp4">
+</video>
+<div class="preview-grid" id="grid" data-count="4"></div>
+</main>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

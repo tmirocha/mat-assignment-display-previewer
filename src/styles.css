@@ -1,0 +1,879 @@
+/* ============================================================
+   NCAA WRESTLING - MAT ASSIGNMENT DISPLAY v2
+   Inspired by NCAA Wrestling CG Toolkit
+   ============================================================ */
+
+/* --- FONTS --- */
+@font-face {
+	font-family: 'United Sans';
+	src: url(https://tw-misc.s3.us-west-2.amazonaws.com/mat-assignment-display/ncaa/v2/fonts/UnitedSansReg-Black.otf) format('opentype');
+	font-weight: 900;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'United Sans Cond';
+	src: url(https://tw-misc.s3.us-west-2.amazonaws.com/mat-assignment-display/ncaa/v2/fonts/UnitedSansSemiCond-Black.otf) format('opentype');
+	font-weight: 900;
+	font-style: normal;
+}
+@font-face {
+	font-family: 'United Sans Ext';
+	src: url(https://tw-misc.s3.us-west-2.amazonaws.com/mat-assignment-display/ncaa/v2/fonts/UnitedSansSemiExt-Black.otf) format('opentype');
+	font-weight: 900;
+	font-style: normal;
+}
+
+/* --- PALETTE --- */
+:root {
+	--ncaa-blue-bright: #009EDE;
+	--ncaa-blue-mid: #005EB8;
+	--ncaa-blue-dark: #002855;
+	--ncaa-gray: #C1C6C8;
+	--ncaa-gray-dark: #3a3f47;
+	--surface-dark: #1a1e24;
+	--surface-card: #22272e;
+	--surface-row: #2a2f38;
+	--border-silver: rgba(193, 198, 200, 0.3);
+	--text-primary: #FFFFFF;
+	--text-secondary: #C1C6C8;
+	--text-accent: #009EDE;
+	--clock-yellow: #FFD200;
+	--columns: 1;
+
+	/* --- SIZING (tuned for export/production context) --- */
+	--header-bar-min-h: 2.4em;
+	--header-mat-pad-x: 1em;
+	--header-mat-fs: 2em;
+	--header-info-fs: 1.8em;
+	--wrestler-row-min-h: 3em;
+	--wrestler-info-pad-y: 0.2em;
+	--wrestler-name-fs: 2.66em;
+	--team-name-fs: 1.6em;
+	--score-fs: 4em;
+	--period-fs: 1.2em;
+	--period-pad-y: 0.2em;
+	--clock-fs: 2.5em;
+	--riding-time-fs: 1.5em;
+	--riding-time-pad-y: 0.15em;
+	--upcoming-bar-min-h: 2.2em;
+	--upcoming-label-fs: 1.3em;
+	--upcoming-matchup-fs: 1.5em;
+}
+
+/* --- DEFAULTS (empty/null fields) --- */
+.periodName:empty::before,
+.periodName[data-value=""]::before { content: "Period 1"; }
+.clockTime:empty::before,
+.clockTime[data-value=""]::before { content: "0:00"; }
+.ridingTime:empty::before,
+.ridingTime[data-value=""]::before { content: "0:00"; }
+.wScore:empty::before,
+.wScore[data-value=""]::before { content: "0"; }
+
+/* --- PERIOD ABBREVIATIONS (NCAA overtime terminology) --- */
+.periodName[data-value*="Overtime"] > span {
+	display: none;
+}
+.periodName[data-value="Overtime 1"]::before { content: "SV"; }
+.periodName[data-value="Overtime 2"]::before { content: "TB 1"; }
+.periodName[data-value="Overtime 3"]::before { content: "TB 2"; }
+.periodName[data-value="Double Overtime"]::before { content: "DBL OT"; }
+
+/* --- RESET & BASE --- */
+body {
+	margin: 0;
+	padding: 0;
+	background: var(--surface-dark);
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	font-weight: 900;
+	color: var(--text-primary);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* --- OUTER FRAME (per-mat container) --- */
+.outer-frame {
+	font-size: calc(2.2vw / var(--columns));
+	margin: 0.4em 0.5em;
+}
+
+/* --- NOISE TEXTURE (matches NCAA toolkit speckle pattern) --- */
+@keyframes grain {
+	0%, 100% { transform: translate(0, 0); }
+	10% { transform: translate(-1%, -1%); }
+	20% { transform: translate(1%, 0%); }
+	30% { transform: translate(-2%, 1%); }
+	40% { transform: translate(1%, -1%); }
+	50% { transform: translate(-1%, 2%); }
+	60% { transform: translate(2%, 1%); }
+	70% { transform: translate(0%, -2%); }
+	80% { transform: translate(-1%, 0%); }
+	90% { transform: translate(1%, 1%); }
+}
+
+/* --- MATCH CARD --- */
+.match-card {
+	border-radius: 0.5em;
+	overflow: hidden;
+	border: 2px solid rgba(193, 198, 200, 0.4);
+	background: var(--surface-card);
+	box-shadow:
+		0 0.5em 2em rgba(0, 0, 0, 0.5),
+		0 0.2em 0.6em rgba(0, 0, 0, 0.3),
+		inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	position: relative;
+}
+
+/* Speckle/noise overlay — matches the toolkit's grainy texture */
+.match-card::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	pointer-events: none;
+	opacity: 0.04;
+	background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	background-size: 128px 128px;
+	mix-blend-mode: screen;
+	animation: grain 4s steps(8) infinite;
+}
+
+/* --- HEADER BAR --- */
+.header-bar {
+	display: flex;
+	align-items: stretch;
+	background:
+		radial-gradient(ellipse 120% 200% at 15% 50%, rgba(0, 158, 222, 0.25) 0%, transparent 60%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+		var(--ncaa-blue-dark);
+	min-height: var(--header-bar-min-h);
+	border-bottom: 3px solid var(--ncaa-blue-bright);
+	position: relative;
+}
+
+/* Blue orb glow behind mat number — inspired by toolkit circle accent */
+.header-mat {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 var(--header-mat-pad-x);
+	font-family: 'United Sans Ext', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--header-mat-fs);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-primary);
+	white-space: nowrap;
+	background:
+		radial-gradient(circle at 50% 50%, rgba(0, 158, 222, 0.35) 0%, rgba(0, 94, 184, 0.1) 50%, transparent 70%),
+		rgba(0, 0, 0, 0.25);
+	border-right: 2px solid rgba(255, 255, 255, 0.15);
+	position: relative;
+	padding-top: 0.06em;
+}
+
+.header-info {
+	flex: 1;
+	position: relative;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+}
+
+.header-info .rotate-frame {
+	text-align: right;
+}
+
+.header-info ul.rotate > li > div {
+	text-align: right;
+	padding-right: 1em;
+	font-size: var(--header-info-fs);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-primary);
+	transform: translateY(0.06em);
+}
+
+/* --- MATCH BODY --- */
+.match-body {
+	display: flex;
+	align-items: stretch;
+	position: relative;
+}
+
+/* Large decorative arc — inspired by toolkit background sweep lines */
+.match-body::after {
+	content: '';
+	position: absolute;
+	width: 180%;
+	height: 400%;
+	bottom: -200%;
+	left: -40%;
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.03);
+	pointer-events: none;
+	z-index: 0;
+}
+
+/* --- WRESTLERS PANEL --- */
+.wrestlers-panel {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+/* --- WRESTLER ROW --- */
+.wrestler-row {
+	flex: 1;
+	display: flex;
+	align-items: stretch;
+	min-height: var(--wrestler-row-min-h);
+	position: relative;
+	overflow: hidden;
+}
+
+.wrestler-row.w1 {
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.wrestler-row.w2 {
+	border-top: 1px solid rgba(0, 0, 0, 0.3);
+}
+
+.wrestler-color-bar {
+	width: 0.35em;
+	flex-shrink: 0;
+}
+.w1 .wrestler-color-bar { background: #cc0000; }
+.w2 .wrestler-color-bar { background: #00802b; }
+
+/* Data-driven color overrides (when wrestler colors swap) */
+.wrestler-row[data-color="#CC0000"] .wrestler-color-bar { background: #cc0000; }
+.wrestler-row[data-color="#006600"] .wrestler-color-bar { background: #00802b; }
+.wrestler-row[data-color="#330099"] .wrestler-color-bar { background: #330099; }
+
+/* --- WRESTLER INFO --- */
+.wrestler-info {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	padding: var(--wrestler-info-pad-y) 0.5em;
+	position: relative;
+	overflow: hidden;
+	min-width: 0;
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+		linear-gradient(135deg, var(--surface-row) 0%, rgba(34, 39, 46, 0.6) 100%);
+}
+
+/* Decorative arc sweep — matches the toolkit's white curve motif */
+.wrestler-info::before {
+	content: '';
+	position: absolute;
+	width: 140%;
+	height: 300%;
+	top: -100%;
+	right: -20%;
+	border-radius: 50%;
+	border: 1px solid rgba(255, 255, 255, 0.04);
+	pointer-events: none;
+	z-index: 0;
+}
+
+.wrestler-seed {
+	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
+	font-size: 1.6em;
+	color: var(--text-accent);
+	margin-right: 0.3em;
+	flex-shrink: 0;
+	min-width: 1.2em;
+	text-align: center;
+}
+
+.wrestler-details {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.wrestler-name {
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--wrestler-name-fs);
+	line-height: 1;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--text-primary);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
+	flex-shrink: 1;
+	min-width: 0;
+}
+
+.team-name {
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--team-name-fs);
+	line-height: 1;
+	color: var(--text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+/* Stacked layout: team name below wrestler name when fewer rows.
+   :not([data-rows]) fallback covers the brief window before onerror stamps it. */
+.outer-frame:not([data-rows]) .wrestler-details,
+.outer-frame[data-rows="1"] .wrestler-details,
+.outer-frame[data-rows="2"] .wrestler-details,
+.outer-frame[data-rows="3"] .wrestler-details {
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: center;
+	gap: 0;
+	overflow: visible;
+}
+.outer-frame:not([data-rows]) .wrestler-name,
+.outer-frame[data-rows="1"] .wrestler-name,
+.outer-frame[data-rows="2"] .wrestler-name,
+.outer-frame[data-rows="3"] .wrestler-name {
+	flex-shrink: 0;
+	overflow: visible;
+}
+
+.team-logo {
+	position: absolute;
+	right: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 9em;
+	height: 9em;
+	opacity: 0.15;
+	pointer-events: none;
+	z-index: 0;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.team-logo > img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	display: block;
+}
+
+/* --- SCORE BOX --- */
+.score-box {
+	width: 6em;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	overflow: hidden;
+}
+
+.score-box::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.04) 30%, transparent 50%, rgba(0,0,0,0.35) 100%);
+	pointer-events: none;
+}
+
+.w1 .score-box { background: #cc0000; }
+.w2 .score-box { background: #00802b; }
+
+/* Data-driven color overrides (when wrestler colors swap) */
+.wrestler-row[data-color="#CC0000"] .score-box { background: #cc0000; }
+.wrestler-row[data-color="#006600"] .score-box { background: #00802b; }
+.wrestler-row[data-color="#330099"] .score-box { background: #330099; }
+
+.score-value {
+	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--score-fs);
+	line-height: 1;
+	color: var(--text-primary);
+	position: relative;
+	z-index: 1;
+	text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transform: translateY(0.04em);
+}
+
+.score-value:not(:empty) + .score-default {
+	display: none;
+}
+
+.score-default {
+	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--score-fs);
+	line-height: 1;
+	color: var(--text-primary);
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transform: translateY(0.04em);
+	text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+/* --- CLOCK PANEL --- */
+.clock-panel {
+	width: 6.75em;
+	flex-shrink: 0;
+	display: flex;
+	flex-direction: column;
+	border-left: 2px solid rgba(255, 255, 255, 0.06);
+	text-align: center;
+}
+
+.period-display {
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, transparent 60%),
+		var(--ncaa-blue-dark);
+	color: var(--text-primary);
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--period-fs);
+	line-height: 1;
+	padding: var(--period-pad-y) 0.2em;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.clock-display {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background:
+		radial-gradient(ellipse at 50% 50%, rgba(255, 210, 0, 0.06) 0%, transparent 70%),
+		#111317;
+	color: var(--clock-yellow);
+	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--clock-fs);
+	line-height: 1;
+	padding: 0.1em 0;
+	padding-top: 0.14em;
+	text-shadow: 0 0 0.4em rgba(255, 210, 0, 0.35), 0 0 1em rgba(255, 210, 0, 0.1);
+}
+
+.riding-time-label {
+	display: none;
+}
+
+.riding-time-display {
+	background: var(--surface-dark);
+	color: var(--text-primary);
+	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--riding-time-fs);
+	line-height: 1;
+	padding: var(--riding-time-pad-y) 0;
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.riding-time-display .ridingTime[data-value="0:00"] {
+	color: var(--text-primary);
+}
+
+/* --- UPCOMING BAR --- */
+.upcoming-bar {
+	display: flex;
+	align-items: stretch;
+	min-height: var(--upcoming-bar-min-h);
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 50%),
+		var(--surface-dark);
+	border-top: 1px solid rgba(255, 255, 255, 0.06);
+	overflow: hidden;
+}
+
+/* Hide when no upcoming match data exists */
+.upcoming-bar[data-upcoming=""] {
+	display: none;
+}
+
+/* Hide upcoming bars based on depth setting */
+.outer-frame[data-upcoming-depth="0"] .upcoming-bar {
+	display: none;
+}
+.outer-frame[data-upcoming-depth="1"] .upcoming-bar + .upcoming-bar {
+	display: none;
+}
+
+.upcoming-label {
+	position: relative;
+	width: 10em;
+	flex-shrink: 0;
+	overflow: hidden;
+	background:
+		radial-gradient(ellipse 80% 150% at 20% 50%, rgba(0, 158, 222, 0.2) 0%, transparent 60%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+		var(--ncaa-blue-dark);
+	border-right: 2px solid var(--ncaa-blue-bright);
+}
+
+.upcoming-label .rotate-frame {
+	text-align: center;
+}
+
+.upcoming-label ul.rotate > li > div {
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	font-size: var(--upcoming-label-fs);
+	color: var(--clock-yellow);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	text-align: center;
+}
+
+.upcoming-matchup {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	padding: 0 0.8em;
+	gap: 0.5em;
+	font-size: var(--upcoming-matchup-fs);
+	overflow: hidden;
+}
+
+.upcoming-wrestler {
+	color: var(--text-primary);
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	white-space: nowrap;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.upcoming-team {
+	color: var(--text-secondary);
+}
+
+.upcoming-vs {
+	color: var(--ncaa-gray-dark);
+	font-size: 0.8em;
+	text-transform: lowercase;
+	flex-shrink: 0;
+}
+
+/* ============================================================
+   ROTATING TEXT ANIMATION (shared)
+   ============================================================ */
+.rotate-frame {
+	position: absolute;
+	overflow: hidden;
+	height: 100%;
+	width: 100%;
+	top: 0;
+	left: 0;
+}
+
+@keyframes rotate {
+	0%   { top: 0; }
+	29%  { top: 0; }
+	33%  { top: -100%; }
+	62%  { top: -100%; }
+	66%  { top: -200%; }
+	96%  { top: -200%; }
+	100% { top: -300%; }
+}
+
+ul.rotate {
+	padding: 0;
+	margin: 0;
+	list-style: none;
+	display: flex;
+	flex-flow: column;
+	align-items: flex-end;
+	justify-content: center;
+	position: relative;
+	height: 100%;
+	animation-name: rotate;
+	animation-duration: 15s;
+	animation-iteration-count: infinite;
+}
+
+ul.rotate > li {
+	flex: 1;
+	display: flex;
+	flex-flow: column;
+	justify-content: center;
+	width: 100%;
+	position: absolute;
+	top: 0;
+	right: 0;
+	height: 100%;
+	white-space: nowrap;
+}
+
+ul.rotate > li:nth-child(2) { top: 100%; }
+ul.rotate > li:nth-child(3) { top: 200%; }
+ul.rotate > li:nth-child(4) { top: 300%; }
+
+/* ============================================================
+   SCORE CHANGE ANIMATION
+   ============================================================ */
+
+@keyframes score-flash {
+	0%   { opacity: 0.9; }
+	100% { opacity: 0; }
+}
+
+@keyframes score-glow {
+	0%   { box-shadow: 0 0 0 0 rgba(255,255,255,0.8); }
+	40%  { box-shadow: 0 0 1.5em 0.5em rgba(255,255,255,0.4); }
+	100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+
+@keyframes score-shake {
+	0%, 100% { translate: 0; }
+	10%  { translate: -0.15em; }
+	20%  { translate: 0.12em; }
+	30%  { translate: -0.1em; }
+	40%  { translate: 0.08em; }
+	50%  { translate: -0.05em; }
+	60%  { translate: 0.03em; }
+}
+
+@keyframes score-bump {
+	0%   { scale: 1; }
+	35%  { scale: 1.18; }
+	100% { scale: 1; }
+}
+
+@keyframes score-ring {
+	0%   { scale: 0.3; opacity: 0.8; border-width: 0.2em; }
+	100% { scale: 3; opacity: 0; border-width: 0.02em; }
+}
+
+@keyframes delta-pop {
+	0%   { scale: 0.2; opacity: 0; }
+	50%  { scale: 1.35; opacity: 1; }
+	70%  { scale: 0.92; }
+	85%  { scale: 1.08; }
+	100% { scale: 1; opacity: 1; }
+}
+
+@keyframes delta-out {
+	0%   { scale: 1; opacity: 1; }
+	100% { scale: 2.5; opacity: 0; }
+}
+
+@keyframes row-sweep {
+	0%   { translate: -100%; }
+	100% { translate: 100%; }
+}
+
+@keyframes colorbar-flash {
+	0%   { filter: brightness(3) saturate(1.5); }
+	100% { filter: brightness(1) saturate(1); }
+}
+
+/* --- Flash overlay (score-box ::before) --- */
+.score-box.score-blast::before {
+	content: '';
+	position: absolute;
+	inset: -50%;
+	background: radial-gradient(ellipse at 50% 50%,
+		rgba(255,255,255,0.95) 0%,
+		rgba(255,255,255,0.6) 30%,
+		transparent 65%);
+	z-index: 6;
+	pointer-events: none;
+	animation: score-flash 400ms ease-out forwards;
+}
+
+/* --- Glow + shake on score-box --- */
+.score-box.score-blast {
+	animation: score-glow 1s ease-out, score-shake 400ms ease-out 40ms;
+}
+
+/* --- Score value bump --- */
+.score-box.score-blast .score-value,
+.score-box.score-blast .wScore {
+	animation: score-bump 500ms ease-out 100ms;
+}
+
+/* --- Expanding ring --- */
+.score-ring {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 2em;
+	height: 2em;
+	margin: -1em 0 0 -1em;
+	border: 0.2em solid rgba(255,255,255,0.7);
+	border-radius: 50%;
+	z-index: 5;
+	pointer-events: none;
+	animation: score-ring 700ms ease-out forwards;
+}
+
+/* --- Row highlight sweep --- */
+.wrestler-row.row-highlight::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg,
+		transparent 0%,
+		rgba(255,255,255,0.08) 30%,
+		rgba(255,255,255,0.2) 50%,
+		rgba(255,255,255,0.08) 70%,
+		transparent 100%);
+	z-index: 3;
+	pointer-events: none;
+	animation: row-sweep 650ms ease-in-out forwards;
+}
+
+/* --- Color bar flash --- */
+.wrestler-row.row-highlight .wrestler-color-bar {
+	animation: colorbar-flash 600ms ease-out;
+}
+
+/* --- Delta (+N) overlay --- */
+.delta-overlay {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 6em;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
+	font-weight: 900;
+	font-size: 3.2em;
+	line-height: 1;
+	color: #fff;
+	text-shadow:
+		0 0 0.3em rgba(255,255,255,0.9),
+		0 0 0.7em rgba(255,255,255,0.5),
+		0 0 1.5em rgba(255,255,255,0.2),
+		0 0.06em 0.15em rgba(0,0,0,0.7);
+	z-index: 20;
+	pointer-events: none;
+	opacity: 0;
+	scale: 0.2;
+}
+
+.delta-overlay.animate {
+	animation:
+		delta-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+		delta-out 350ms ease-in 800ms forwards;
+}
+
+/* ============================================================
+   TEAM SCORES / MARQUEE FRAME
+   Styled here so exported CSS overrides JSP defaults.
+   The JSP generates inline styles on the inner table
+   (border, color, font-weight) so !important is needed.
+   ============================================================ */
+.marquee-frame {
+	/* 2.2vw/cols * 2.66 (--wrestler-name-fs) * 0.9 ≈ 5.27vw/cols */
+	font-size: calc(5.27vw / var(--columns)) !important;
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+		var(--surface-card) !important;
+	border-top: 3px solid var(--ncaa-blue-bright);
+	box-shadow: 0 -0.5em 2em rgba(0, 0, 0, 0.4);
+	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
+	font-weight: 900;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+}
+
+.marquee-frame table {
+	border: none !important;
+	font-size: inherit !important;
+	font-family: inherit !important;
+	font-weight: inherit !important;
+	letter-spacing: inherit;
+}
+
+.marquee-frame marquee {
+	padding: 0.25em 1em;
+	display: block;
+}
+
+/* Fixed label — mirrors .upcoming-label, absolutely positioned
+   so scrolling entries pass behind it on the left edge. */
+.ts-frame-label {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 0.4em;
+	background:
+		radial-gradient(ellipse 80% 150% at 20% 50%, rgba(0, 158, 222, 0.2) 0%, transparent 60%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%),
+		var(--ncaa-blue-dark);
+	border-right: 2px solid var(--ncaa-blue-bright);
+	color: var(--clock-yellow);
+	white-space: nowrap;
+}
+
+/* Parsed team score entry spans (injected by bootstrap / preview JS) */
+.ts-entry {
+	margin-right: 1.5em;
+}
+.ts-rank {
+	color: var(--text-accent);
+	margin-right: 0.15em;
+}
+.ts-team {
+	color: var(--text-primary);
+}
+.ts-score {
+	color: var(--text-secondary);
+	margin-left: 0.3em;
+}
+
+/* ============================================================
+   BACKGROUND VIDEO
+   ============================================================ */
+.bg-video {
+	position: fixed;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	opacity: 0.5;
+	z-index: -1;
+	pointer-events: none;
+}
+
+/* Only render the first video element (template repeats per mat) */
+.bg-video ~ .bg-video {
+	display: none;
+}
+
+/* ============================================================
+   LAYOUT CONTAINER (rendered by the app)
+   ============================================================ */
+#matAssignDisplayFrame {
+	height: 100vh;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	position: absolute;
+	width: 100%;
+}
