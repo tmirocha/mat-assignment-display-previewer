@@ -2,13 +2,6 @@
 // Card template — fetches from card-template.html (production artifact)
 // ============================================================
 
-// Background video tag — rendered once per page, not per card
-const BG_VIDEO =
-	'<video class="bg-video" autoplay loop muted playsinline ' +
-	'poster="https://tw-misc.s3.us-west-2.amazonaws.com/mat-assignment-display/ncaa/v2/backgrounds/background.png">\n' +
-	'\t<source src="https://tw-misc.s3.us-west-2.amazonaws.com/mat-assignment-display/ncaa/v2/backgrounds/background.mp4" type="video/mp4">\n' +
-	'</video>\n';
-
 let cardTemplate = '';
 let exportTemplate = '';
 
@@ -21,7 +14,7 @@ export async function initTemplate() {
 }
 
 export function getExportHTML() {
-	return BG_VIDEO + exportTemplate;
+	return exportTemplate;
 }
 
 export function fillTemplate(tpl, m, idx, depth) {

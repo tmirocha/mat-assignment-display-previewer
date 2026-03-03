@@ -10,7 +10,8 @@ The included `card-template.html` and `styles.css` are a **sample layout** — a
 
 ```
 src/
-  index.html            # Previewer entry point
+  index.html            # Previewer entry point (controls + iframe host)
+  frame.html            # Iframe inner page (production styles + preview grid)
   card-template.html    # Card template — sample included (exported artifact)
   styles.css            # Stylesheet — sample included (exported artifact)
   preview.css           # Previewer-only overrides (not exported)
@@ -28,13 +29,16 @@ src/
 ### Template token system
 Card template uses `[tokenName]` placeholders (e.g., `[w1FirstName]`, `[mat]`, `[w1Score]`). Optional length truncation via `[tokenName:N]`. Prefixes `ondeck-` and `inhole-` scope tokens to upcoming bouts.
 
+### Iframe isolation
+The previewer renders production content inside an `<iframe>` (`frame.html`). `index.html` hosts the preview controls and the iframe. `frame.html` loads production `styles.css` and contains a minimal `<style>` block for the preview grid layout (using `vw`/`vh` units). All production DOM access in `app.js` goes through `innerDoc` (the iframe's `contentDocument`), gated by `waitForIframe()` at startup. `score-animation.js` accepts a `doc` parameter to operate inside the iframe.
+
 ### Two rendering contexts
 - **Preview**: `app.js` calls `fillTemplate()` which replaces tokens from mock data. The `<img onerror>` bootstrap script is stripped out — `score-animation.js` handles animations instead.
 - **Production (JSP)**: `assignedMatchesReady()` calls `assignedMatches[i].replaceCodes(l, prefix)` to fill tokens from live data. The `<img onerror>` bootstrap in card-template.html initializes score animations and derives `data-rows` for layout.
 
 ### CSS custom properties
 - `--columns`: Set in `:root` as `1` default. Exported CSS replaces it with `[columns]` placeholder; the JSP substitutes the actual column count.
-- `--rows`: Set on the grid element by `app.js` in preview. In production, derived by the `<img onerror>` bootstrap from card count / `[columns]`.
+- `--rows`: Set on the iframe document root by `app.js` in preview. In production, derived by the `<img onerror>` bootstrap from card count / `[columns]`.
 - `--upcoming-bars`: Controls upcoming bout bar visibility (0-2).
 
 ### Export flow

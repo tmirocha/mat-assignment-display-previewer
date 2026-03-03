@@ -65,7 +65,7 @@ Use the toolbar controls to test your layout at different mat counts, column con
 The previewer references background files from `src/assets/backgrounds/` (gitignored). To use the preview background:
 
 1. Place a `background.png` (poster) and `background.mp4` (video) in `src/assets/backgrounds/`
-2. Or remove the `<video>` tag from `src/index.html` if you don't need a background
+2. Or remove the `<video>` tag from `src/frame.html` if you don't need a background
 
 In production, the exported HTML references backgrounds from S3 via the `BG_VIDEO` constant in `src/js/template.js`. Update that path to match your hosting setup.
 
@@ -135,7 +135,8 @@ If your custom layout doesn't need score animations, you can omit the `<img oner
 src/
 ├── card-template.html    ← Your card template (sample included)
 ├── styles.css            ← Your stylesheet (sample included)
-├── index.html            # Previewer entry point
+├── index.html            # Previewer entry point (controls + iframe host)
+├── frame.html            # Iframe inner page (production styles + preview grid)
 ├── preview.css           # Previewer-only styles (not exported)
 ├── js/
 │   ├── app.js            # Previewer controller

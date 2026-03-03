@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mat Assignment Display — Previewer</title>
-<link rel="stylesheet" href="styles.css">
 <link rel="stylesheet" href="preview.css">
 </head>
 <body>
@@ -45,12 +44,9 @@
 <div class="toast" id="toast"></div>
 <div class="safe-area-label" id="safeAreaLabel"></div>
 
-<!-- GRID CONTAINER -->
+<!-- PRODUCTION VIEWPORT (iframe) -->
 <main class="preview-main">
-<video class="bg-video" autoplay loop muted playsinline poster="assets/backgrounds/background.png">
-	<source src="assets/backgrounds/background.mp4" type="video/mp4">
-</video>
-<div class="preview-grid" id="grid" data-count="4"></div>
+	<iframe id="previewFrame" src="frame.html"></iframe>
 </main>
 
 <script type="module" src="js/app.js"></script>

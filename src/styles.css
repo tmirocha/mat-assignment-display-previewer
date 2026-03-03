@@ -861,11 +861,6 @@ ul.rotate > li:nth-child(4) { top: 300%; }
 	pointer-events: none;
 }
 
-/* Only render the first video element (template repeats per mat) */
-.bg-video ~ .bg-video {
-	display: none;
-}
-
 /* ============================================================
    LAYOUT CONTAINER (rendered by the app)
    ============================================================ */

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* Preview grid layout — production uses a JSP-generated <table> instead.
+   Custom properties (--columns, --rows, --upcoming-bars) set by parent JS. */
+body { margin: 0; overflow: hidden; }
+#matAssignDisplayFrame {
+	display: grid;
+	align-content: center;
+}
+.outer-frame {
+	margin: 0.4em 0.5em;
+	min-width: 0;
+	display: flex;
+	align-items: start;
+	font-size: min(
+		calc(2.2vw / var(--columns, 1)),
+		calc(100vh / (var(--rows, 1) * (10.5 + var(--upcoming-bars, 0) * 2.2)))
+	);
+}
+.match-card { width: 100%; }
+</style>
+</head>
+<body>
+<video class="bg-video" autoplay loop muted playsinline
+	poster="assets/backgrounds/background.png">
+	<source src="assets/backgrounds/background.mp4" type="video/mp4">
+</video>
+<div id="matAssignDisplayFrame"></div>
+</body>
+</html>

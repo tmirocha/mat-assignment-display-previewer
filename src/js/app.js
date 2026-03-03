@@ -11,8 +11,22 @@ let mockMatches = [];
 let CARD_TEMPLATE = '';
 let EXPORT_CSS = '';
 
-// --- DOM refs (populated on init) ---
+// --- DOM refs ---
 const $ = (id) => document.getElementById(id);
+
+// Iframe refs (populated after load)
+let iframeEl, innerDoc, innerRoot;
+
+function waitForIframe() {
+	return new Promise(resolve => {
+		iframeEl = $('previewFrame');
+		if (iframeEl.contentDocument && iframeEl.contentDocument.readyState === 'complete') {
+			resolve();
+		} else {
+			iframeEl.addEventListener('load', resolve, { once: true });
+		}
+	});
+}
 
 // --- Toast ---
 let toastTimer;
@@ -30,24 +44,24 @@ function renderMats() {
 	const count = Math.max(1, Math.min(8, parseInt($('matCount').value) || 1));
 	const cols = Math.max(1, Math.min(4, parseInt($('colCount').value) || 1));
 	const depth = Math.max(0, Math.min(2, parseInt($('upcomingDepth').value) || 0));
-	const grid = $('grid');
+	const frame = innerDoc.getElementById('matAssignDisplayFrame');
 	const rows = Math.ceil(count / cols);
 
-	grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-	grid.style.gridTemplateRows = 'repeat(' + rows + ', auto)';
-	grid.style.setProperty('--columns', cols);
-	grid.style.setProperty('--rows', rows);
-	grid.style.setProperty('--upcoming-bars', depth);
-	const teamFrame = $('teamFrame'); // save before innerHTML wipe
-	grid.innerHTML = '';
+	frame.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+	frame.style.gridTemplateRows = 'repeat(' + rows + ', auto)';
+	innerRoot.style.setProperty('--columns', cols);
+	innerRoot.style.setProperty('--rows', rows);
+	innerRoot.style.setProperty('--upcoming-bars', depth);
+	const teamFrame = innerDoc.getElementById('teamFrame');
+	frame.innerHTML = '';
 
 	for (let i = 0; i < count; i++) {
-		grid.innerHTML += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth);
+		frame.innerHTML += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth);
 	}
-	if (teamFrame) grid.appendChild(teamFrame); // restore
+	if (teamFrame) innerDoc.body.appendChild(teamFrame); // restore
 
 	// Derive row count from rendered cards / columns and stamp each card
-	grid.querySelectorAll('.outer-frame').forEach(function(el) {
+	frame.querySelectorAll('.outer-frame').forEach(function(el) {
 		el.dataset.rows = rows;
 	});
 
@@ -62,7 +76,7 @@ function simulateScore() {
 	const matIdx = Math.floor(Math.random() * count);
 	const w = Math.random() < 0.5 ? 'w1' : 'w2';
 	const id = w + 'Score_prev' + matIdx;
-	const el = document.getElementById(id);
+	const el = innerDoc.getElementById(id);
 	if (!el) return;
 	const current = parseInt(el.getAttribute('data-value'), 10) || 0;
 	const delta = Math.floor(Math.random() * 3) + 1;
@@ -101,7 +115,7 @@ function parseMarqueeScores(marqueeEl) {
 	// Create fixed label as a direct child of .marquee-frame
 	const frame = marqueeEl.closest('.marquee-frame');
 	if (frame && !frame.querySelector('.ts-frame-label')) {
-		const label = document.createElement('div');
+		const label = innerDoc.createElement('div');
 		label.className = 'ts-frame-label';
 		label.textContent = prefix;
 		frame.insertBefore(label, frame.firstChild);
@@ -109,17 +123,17 @@ function parseMarqueeScores(marqueeEl) {
 }
 
 function initTeamScores() {
-	const frame = document.createElement('div');
+	const frame = innerDoc.createElement('div');
 	frame.id = 'teamFrame';
 	frame.className = 'marquee-frame';
 	frame.style.cssText = 'bottom:0;font-size:16px;visibility:hidden;';
 	frame.innerHTML = TEAM_SCORES_HTML;
 	parseMarqueeScores(frame.querySelector('marquee'));
-	$('grid').appendChild(frame);
+	innerDoc.body.appendChild(frame);
 }
 
 function toggleTeamScores() {
-	const frame = $('teamFrame');
+	const frame = innerDoc.getElementById('teamFrame');
 	if (frame) {
 		frame.style.visibility = $('teamScores').checked ? 'visible' : 'hidden';
 	}
@@ -133,20 +147,20 @@ function simulateRedraw() {
 	const count = Math.max(1, Math.min(8, parseInt($('matCount').value) || 1));
 	const cols = Math.max(1, Math.min(4, parseInt($('colCount').value) || 1));
 	const depth = Math.max(0, Math.min(2, parseInt($('upcomingDepth').value) || 0));
-	const grid = $('grid');
+	const frame = innerDoc.getElementById('matAssignDisplayFrame');
 	const rows = Math.ceil(count / cols);
 
 	// Rebuild innerHTML just like production — no data-rows yet
-	const teamFrame = $('teamFrame'); // save before innerHTML wipe
-	grid.innerHTML = '';
+	const teamFrame = innerDoc.getElementById('teamFrame');
+	frame.innerHTML = '';
 	for (let i = 0; i < count; i++) {
-		grid.innerHTML += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth);
+		frame.innerHTML += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth);
 	}
-	if (teamFrame) grid.appendChild(teamFrame); // restore
+	if (teamFrame) innerDoc.body.appendChild(teamFrame); // restore
 
 	// Stamp data-rows on next frame (production onerror fires before paint)
 	requestAnimationFrame(() => {
-		grid.querySelectorAll('.outer-frame').forEach(el => {
+		frame.querySelectorAll('.outer-frame').forEach(el => {
 			el.dataset.rows = rows;
 		});
 	});
@@ -217,29 +231,23 @@ function resetSettings() {
 
 // --- Safe Area / Aspect Ratio ---
 function applyAspectRatio() {
-	const grid = $('grid');
-	const main = document.querySelector('.preview-main');
 	const label = $('safeAreaLabel');
 	const ratio = $('aspectRatio').value;
 
 	if (ratio === 'fill') {
-		grid.classList.remove('safe-area-active');
-		main.classList.remove('safe-area-active');
+		iframeEl.classList.remove('safe-area-active');
 		label.classList.remove('visible');
 		saveSettings();
 		return;
 	}
 
 	const parts = ratio.split(':');
-	grid.style.setProperty('--ar-w', parts[0]);
-	grid.style.setProperty('--ar-h', parts[1]);
-	main.style.setProperty('--ar-w', parts[0]);
-	main.style.setProperty('--ar-h', parts[1]);
-	grid.classList.add('safe-area-active');
-	main.classList.add('safe-area-active');
+	iframeEl.style.setProperty('--ar-w', parts[0]);
+	iframeEl.style.setProperty('--ar-h', parts[1]);
+	iframeEl.classList.add('safe-area-active');
 
 	requestAnimationFrame(() => {
-		const rect = grid.getBoundingClientRect();
+		const rect = iframeEl.getBoundingClientRect();
 		label.textContent = ratio + '  \u2022  ' + Math.round(rect.width) + ' \u00d7 ' + Math.round(rect.height) + 'px';
 		label.classList.add('visible');
 	});
@@ -248,21 +256,25 @@ function applyAspectRatio() {
 
 function updateSafeAreaLabel() {
 	if ($('aspectRatio').value === 'fill') return;
-	const grid = $('grid');
 	const label = $('safeAreaLabel');
 	const ratio = $('aspectRatio').value;
-	const rect = grid.getBoundingClientRect();
+	const rect = iframeEl.getBoundingClientRect();
 	label.textContent = ratio + '  \u2022  ' + Math.round(rect.width) + ' \u00d7 ' + Math.round(rect.height) + 'px';
 }
 
 // --- Init ---
 async function init() {
-	// Fetch production template and CSS in parallel
+	// Fetch production template and CSS in parallel with iframe load
 	const [template] = await Promise.all([
 		initTemplate(),
 		fetch('styles.css').then(r => r.text()).then(css => { EXPORT_CSS = css; }).catch(() => {}),
+		waitForIframe(),
 	]);
 	CARD_TEMPLATE = template;
+
+	// Iframe is loaded — grab references
+	innerDoc = iframeEl.contentDocument;
+	innerRoot = innerDoc.documentElement;
 
 	// Restore saved settings
 	const saved = loadSettings();
@@ -274,7 +286,7 @@ async function init() {
 		if (saved.teamScores) $('teamScores').checked = true;
 	}
 
-	// Create team scores marquee (hidden by default)
+	// Create team scores marquee inside iframe (hidden by default)
 	initTeamScores();
 	toggleTeamScores();
 
@@ -283,8 +295,8 @@ async function init() {
 	renderMats();
 	applyAspectRatio();
 
-	// Start score animation watcher
-	initScoreAnimation();
+	// Start score animation watcher (pass iframe document)
+	initScoreAnimation(innerDoc);
 
 	// --- Wire up event listeners ---
 	const onRender = () => renderMats();

@@ -3,44 +3,13 @@
    (Not shipped to production — only used during local dev)
    ============================================================ */
 
-/* --- PREVIEW SIZING OVERRIDES (tighter for local preview) --- */
-:root {
-	--header-bar-min-h: 1.8em;
-	--header-mat-pad-x: 0.8em;
-	--header-mat-fs: 1.7em;
-	--header-info-fs: 1.5em;
-	--wrestler-row-min-h: 2.2em;
-	--wrestler-info-pad-y: 0.1em;
-	--wrestler-name-fs: 2.3em;
-	--team-name-fs: 1.35em;
-	--score-fs: 3.2em;
-	--period-fs: 1em;
-	--period-pad-y: 0.15em;
-	--clock-fs: 2em;
-	--riding-time-fs: 1.2em;
-	--riding-time-pad-y: 0.1em;
-	--upcoming-bar-min-h: 1.8em;
-	--upcoming-label-fs: 1.1em;
-	--upcoming-matchup-fs: 1.25em;
-}
-
-/* --- PREVIEW LAYOUT: simulates 1-8 mat grid --- */
+/* --- PREVIEW LAYOUT --- */
 body {
 	background: #2a2f38;
 	height: 100vh;
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-}
-.bg-video {
-	position: absolute;
-	inset: 0;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	opacity: 0.5;
-	z-index: 0;
-	pointer-events: none;
 }
 .preview-main {
 	flex: 1;
@@ -53,34 +22,21 @@ body {
 	position: relative;
 	padding: 1em;
 }
-.preview-grid {
-	display: grid;
-	gap: 0;
+
+/* --- IFRAME (production viewport) --- */
+#previewFrame {
+	border: none;
 	width: 100%;
 	height: 100%;
-	align-content: start;
-	overflow: hidden;
-	container-type: size;
-	position: relative;
-	z-index: 1;
 }
-/* Grid columns, --columns, --rows are set dynamically by renderMats() */
-
-.preview-grid .outer-frame {
-	margin: 0.4em 0.5em;
-	min-width: 0;
-	display: flex;
-	align-items: start;
-	font-size: min(
-		calc(2.2cqw / var(--columns)),
-		calc(100cqh / (var(--rows) * (10.5 + var(--upcoming-bars) * 2.2)))
-	);
-}
-.preview-grid .match-card {
-	width: 100%;
+#previewFrame.safe-area-active {
+	width: min(100cqw, calc(100cqh * var(--ar-w) / var(--ar-h)));
+	height: min(100cqh, calc(100cqw * var(--ar-h) / var(--ar-w)));
+	outline: 2px solid rgba(0, 158, 222, 0.6);
+	box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
 }
 
-/* Preview controls bar */
+/* --- PREVIEW CONTROLS --- */
 .preview-controls {
 	flex-shrink: 0;
 	z-index: 100;
@@ -122,6 +78,15 @@ body {
 }
 .preview-controls button:hover { background: #444; }
 .preview-controls .export-sep { color: #555; }
+.preview-controls .title {
+	font-weight: 700;
+	color: var(--ncaa-blue-bright);
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	font-size: 11px;
+}
+
+/* --- TOAST --- */
 .toast {
 	position: fixed;
 	top: 3.5em;
@@ -144,29 +109,8 @@ body {
 }
 .toast.success { background: rgba(24, 106, 59, 0.95); }
 .toast.error { background: rgba(107, 26, 26, 0.95); }
-.preview-controls .title {
-	font-weight: 700;
-	color: var(--ncaa-blue-bright);
-	text-transform: uppercase;
-	letter-spacing: 0.1em;
-	font-size: 11px;
-}
 
-/* Safe area preview — pure CSS via container query units on .preview-main */
-.preview-grid.safe-area-active {
-	width: min(100cqw, calc(100cqh * var(--ar-w) / var(--ar-h)));
-	height: min(100cqh, calc(100cqw * var(--ar-h) / var(--ar-w)));
-	outline: 2px solid rgba(0, 158, 222, 0.6);
-	box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
-}
-.preview-main.safe-area-active .bg-video {
-	inset: auto;
-	width: min(100cqw, calc(100cqh * var(--ar-w) / var(--ar-h)));
-	height: min(100cqh, calc(100cqw * var(--ar-h) / var(--ar-w)));
-	left: 50%;
-	top: 50%;
-	transform: translate(-50%, -50%);
-}
+/* --- SAFE AREA LABEL --- */
 .safe-area-label {
 	position: fixed;
 	bottom: 0;
@@ -188,18 +132,4 @@ body {
 }
 .safe-area-label.visible {
 	opacity: 1;
-}
-
-/* Team scores marquee — lives inside .preview-grid (the "viewport").
-   In production the JSP uses position:fixed on the real viewport. */
-.marquee-frame {
-	position: absolute;
-	bottom: 0;
-	left: 0;
-	width: 100%;
-	z-index: 200;
-	color: white;
-	/* Preview uses cqw (container) instead of vw, and --wrestler-name-fs is 2.3em here.
-	   Scaled to 90% of wrestler-name size: 2.2 * 2.3 * 0.9 ≈ 4.55 */
-	font-size: calc(4.55cqw / var(--columns)) !important;
 }
