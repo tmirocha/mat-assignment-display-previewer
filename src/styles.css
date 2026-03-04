@@ -39,25 +39,27 @@
 	--text-accent: #009EDE;
 	--clock-yellow: #FFD200;
 	--columns: 1;
+	--font-size: 16;
+	--valign: center;
 
 	/* --- SIZING (tuned for export/production context) --- */
-	--header-bar-min-h: 2.4em;
+	--header-bar-min-h: 2.1em;
 	--header-mat-pad-x: 1em;
-	--header-mat-fs: 2em;
-	--header-info-fs: 1.8em;
-	--wrestler-row-min-h: 3em;
+	--header-mat-fs: 1.7em;
+	--header-info-fs: 1.5em;
+	--wrestler-row-min-h: 2.6em;
 	--wrestler-info-pad-y: 0.2em;
-	--wrestler-name-fs: 2.66em;
-	--team-name-fs: 1.6em;
-	--score-fs: 4em;
-	--period-fs: 1.2em;
+	--wrestler-name-fs: 2.2em;
+	--team-name-fs: 1.3em;
+	--score-fs: 3.2em;
+	--period-fs: 1.1em;
 	--period-pad-y: 0.2em;
-	--clock-fs: 2.5em;
-	--riding-time-fs: 1.5em;
+	--clock-fs: 2.2em;
+	--riding-time-fs: 1.3em;
 	--riding-time-pad-y: 0.15em;
-	--upcoming-bar-min-h: 2.2em;
-	--upcoming-label-fs: 1.3em;
-	--upcoming-matchup-fs: 1.5em;
+	--upcoming-bar-min-h: 1.9em;
+	--upcoming-label-fs: 1.1em;
+	--upcoming-matchup-fs: 1.3em;
 }
 
 /* --- DEFAULTS (empty/null fields) --- */
@@ -93,8 +95,11 @@ body {
 
 /* --- OUTER FRAME (per-mat container) --- */
 .outer-frame {
-	font-size: calc(2.2vw / var(--columns));
+	font-size: calc(1.96vw / var(--columns) * var(--font-size) / 16);
 	margin: 0.4em 0.5em;
+	max-width: 100%;
+	overflow: hidden;
+	box-sizing: border-box;
 }
 
 /* --- NOISE TEXTURE (matches NCAA toolkit speckle pattern) --- */
@@ -340,14 +345,18 @@ body {
 	align-items: flex-start;
 	justify-content: center;
 	gap: 0;
-	overflow: visible;
 }
 .outer-frame:not([data-rows]) .wrestler-name,
 .outer-frame[data-rows="1"] .wrestler-name,
 .outer-frame[data-rows="2"] .wrestler-name,
-.outer-frame[data-rows="3"] .wrestler-name {
-	flex-shrink: 0;
-	overflow: visible;
+.outer-frame[data-rows="3"] .wrestler-name,
+.outer-frame:not([data-rows]) .team-name,
+.outer-frame[data-rows="1"] .team-name,
+.outer-frame[data-rows="2"] .team-name,
+.outer-frame[data-rows="3"] .team-name {
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .team-logo {
@@ -784,12 +793,19 @@ ul.rotate > li:nth-child(4) { top: 300%; }
    (border, color, font-weight) so !important is needed.
    ============================================================ */
 .marquee-frame {
-	/* 2.2vw/cols * 2.66 (--wrestler-name-fs) * 0.9 ≈ 5.27vw/cols */
-	font-size: calc(5.27vw / var(--columns)) !important;
+	/* Positioning — matches JSP inline <style>; harmless duplicate in
+	   production, required in previewer where JSP styles are absent. */
+	position: fixed;
+	z-index: 200;
+	left: 0;
+	width: 100%;
+	/* 1.96vw/cols * 2.2 (--wrestler-name-fs) * 1.05 ≈ 4.53vw/cols
+	   Simplified — preview override in frame.html handles --font-size scaling. */
+	font-size: calc(4.53vw / var(--columns, 1)) !important;
 	background:
 		linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
 		var(--surface-card) !important;
-	border-top: 3px solid var(--ncaa-blue-bright);
+	border-top: 0.08em solid var(--ncaa-blue-bright);
 	box-shadow: 0 -0.5em 2em rgba(0, 0, 0, 0.4);
 	font-family: 'United Sans Cond', 'Helvetica Neue', Arial, sans-serif;
 	font-weight: 900;
@@ -868,7 +884,23 @@ ul.rotate > li:nth-child(4) { top: 300%; }
 	height: 100vh;
 	overflow: hidden;
 	display: flex;
-	align-items: center;
+	align-items: var(--valign);
 	position: absolute;
 	width: 100%;
+}
+
+/* Production vertical alignment — reads data-valign baked into exported HTML */
+#matAssignDisplayFrame:has([data-valign="start"])  { align-items: start; }
+#matAssignDisplayFrame:has([data-valign="center"]) { align-items: center; }
+#matAssignDisplayFrame:has([data-valign="end"])    { align-items: end; }
+
+/* Production table — JSP generates <table width="100%"> with auto layout,
+   which lets content push wider than the viewport. Fixed layout forces
+   columns to respect the 100% width constraint regardless of content. */
+#matAssignDisplayFrame > table {
+	table-layout: fixed;
+}
+
+#matAssignDisplayFrame > table td {
+	overflow: hidden;
 }

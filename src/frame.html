@@ -6,22 +6,38 @@
 <style>
 /* Preview grid layout — production uses a JSP-generated <table> instead.
    Custom properties (--columns, --rows, --upcoming-bars) set by parent JS. */
-body { margin: 0; overflow: hidden; }
+body { margin: 0; overflow: hidden; display: flex; flex-direction: column; height: 100vh; }
 #matAssignDisplayFrame {
+	flex: 1;
+	min-height: 0;
+	height: auto;
+	position: relative;
 	display: grid;
-	align-content: center;
+	align-content: var(--valign, center);
+	container-type: size;
 }
 .outer-frame {
 	margin: 0.4em 0.5em;
 	min-width: 0;
 	display: flex;
 	align-items: start;
-	font-size: min(
-		calc(2.2vw / var(--columns, 1)),
-		calc(100vh / (var(--rows, 1) * (10.5 + var(--upcoming-bars, 0) * 2.2)))
-	);
+	font-size: calc(min(
+		calc(1.96vw / var(--columns, 1)),
+		calc(100cqh / (var(--rows, 1) * (9.0 + var(--upcoming-bars, 0) * 1.9)))
+	) * var(--font-size, 16) / 16);
 }
 .match-card { width: 100%; }
+/* Override fixed positioning so marquee participates in flex flow */
+.marquee-frame { position: relative !important; bottom: auto !important; }
+/* Height-aware marquee sizing — mirrors .outer-frame min() logic scaled
+   by the production marquee-to-card ratio (4.53 / 1.96 ≈ 2.31) so the
+   preview accurately reflects how the marquee looks relative to cards. */
+.marquee-frame {
+	font-size: calc(min(
+		calc(1.96vw / var(--columns, 1)),
+		calc(100cqh / (var(--rows, 1) * (9.0 + var(--upcoming-bars, 0) * 1.9)))
+	) * 2.31 * var(--font-size, 16) / 16) !important;
+}
 </style>
 </head>
 <body>

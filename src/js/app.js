@@ -52,6 +52,8 @@ function renderMats() {
 	innerRoot.style.setProperty('--columns', cols);
 	innerRoot.style.setProperty('--rows', rows);
 	innerRoot.style.setProperty('--upcoming-bars', depth);
+	innerRoot.style.setProperty('--font-size', parseInt($('fontSize').value) || 16);
+	innerRoot.style.setProperty('--valign', $('valign').value);
 	const teamFrame = innerDoc.getElementById('teamFrame');
 	frame.innerHTML = '';
 
@@ -126,16 +128,17 @@ function initTeamScores() {
 	const frame = innerDoc.createElement('div');
 	frame.id = 'teamFrame';
 	frame.className = 'marquee-frame';
-	frame.style.cssText = 'bottom:0;font-size:16px;visibility:hidden;';
+	frame.style.cssText = 'bottom:0;font-size:16px;display:none;';
 	frame.innerHTML = TEAM_SCORES_HTML;
 	parseMarqueeScores(frame.querySelector('marquee'));
 	innerDoc.body.appendChild(frame);
 }
 
 function toggleTeamScores() {
+	const checked = $('teamScores').checked;
 	const frame = innerDoc.getElementById('teamFrame');
 	if (frame) {
-		frame.style.visibility = $('teamScores').checked ? 'visible' : 'hidden';
+		frame.style.display = checked ? '' : 'none';
 	}
 	saveSettings();
 }
@@ -181,9 +184,11 @@ async function exportFile(type) {
 		if (type === 'html') {
 			const depth = parseInt($('upcomingDepth').value) || 0;
 			text = text.replace('[upcomingDepth]', depth);
+			text = text.replace('[valign]', $('valign').value);
 		}
 		if (type === 'css') {
 			text = text.replace('--columns: 1;', '--columns: [columns];');
+			text = text.replace('--font-size: 16;', '--font-size: [fontSize];');
 		}
 		await navigator.clipboard.writeText(text);
 		showToast(label + ' copied to clipboard', 'success');
@@ -195,7 +200,7 @@ async function exportFile(type) {
 
 // --- Settings Persistence ---
 const SETTINGS_KEY = 'matDisplayPreviewSettings';
-const DEFAULTS = { mats: 4, columns: 2, upcoming: 2, screen: 'fill' };
+const DEFAULTS = { mats: 4, columns: 2, upcoming: 2, fontSize: 16, valign: 'center', screen: 'fill' };
 
 function saveSettings() {
 	try {
@@ -203,6 +208,8 @@ function saveSettings() {
 			mats: parseInt($('matCount').value) || DEFAULTS.mats,
 			columns: parseInt($('colCount').value) || DEFAULTS.columns,
 			upcoming: parseInt($('upcomingDepth').value),
+			fontSize: parseInt($('fontSize').value) || DEFAULTS.fontSize,
+			valign: $('valign').value,
 			screen: $('aspectRatio').value,
 			teamScores: $('teamScores').checked,
 		}));
@@ -221,6 +228,8 @@ function resetSettings() {
 	$('matCount').value = DEFAULTS.mats;
 	$('colCount').value = DEFAULTS.columns;
 	$('upcomingDepth').value = DEFAULTS.upcoming;
+	$('fontSize').value = DEFAULTS.fontSize;
+	$('valign').value = DEFAULTS.valign;
 	$('aspectRatio').value = DEFAULTS.screen;
 	$('teamScores').checked = false;
 	toggleTeamScores();
@@ -282,6 +291,8 @@ async function init() {
 		$('matCount').value = saved.mats;
 		$('colCount').value = saved.columns;
 		if (saved.upcoming !== undefined) $('upcomingDepth').value = saved.upcoming;
+		if (saved.fontSize !== undefined) $('fontSize').value = saved.fontSize;
+		if (saved.valign) $('valign').value = saved.valign;
 		$('aspectRatio').value = saved.screen;
 		if (saved.teamScores) $('teamScores').checked = true;
 	}
@@ -304,6 +315,8 @@ async function init() {
 	$('matCount').addEventListener('input', onRender);
 	$('colCount').addEventListener('input', onRender);
 	$('upcomingDepth').addEventListener('input', onRender);
+	$('fontSize').addEventListener('input', onRender);
+	$('valign').addEventListener('change', onRender);
 	$('aspectRatio').addEventListener('change', applyAspectRatio);
 
 	$('btnRandomize').addEventListener('click', () => {
