@@ -10,45 +10,68 @@
 
 <!-- PREVIEW CONTROLS -->
 <div class="preview-controls">
-	<span class="title">Mat Display v2 Preview</span>
-	<label>Mats:
-		<input type="number" id="matCount" value="4" min="1" max="8">
-	</label>
-	<label>Columns:
-		<input type="number" id="colCount" value="2" min="1" max="4">
-	</label>
-	<label>Upcoming:
-		<input type="number" id="upcomingDepth" value="2" min="0" max="2">
-	</label>
-	<label>Font Size:
-		<input type="number" id="fontSize" value="16" min="8" max="32" step="1">
-	</label>
-	<label>Align:
-		<select id="valign">
-			<option value="start">Top</option>
-			<option value="center" selected>Center</option>
-			<option value="end">Bottom</option>
-		</select>
-	</label>
-	<label>Screen:
-		<select id="aspectRatio">
-			<option value="fill">Fill Window</option>
-			<option value="16:9">16:9 (HD / 4K)</option>
-			<option value="16:10">16:10</option>
-			<option value="4:3">4:3</option>
-			<option value="21:9">21:9 (Ultrawide)</option>
-			<option value="32:9">32:9 (Super Ultrawide)</option>
-		</select>
-	</label>
-	<label><input type="checkbox" id="teamScores"> Team Scores</label>
-	<button id="btnRandomize">Randomize Data</button>
-	<button id="btnSimulate">Simulate Score</button>
-	<button id="btnRedraw">Simulate Redraw</button>
-	<span class="export-sep">|</span>
-	<button id="btnExportHTML">Export HTML</button>
-	<button id="btnExportCSS">Export CSS</button>
-	<span class="export-sep">|</span>
-	<button id="btnReset">Reset</button>
+	<div class="ctrl-row">
+		<span class="title">Mat Display v2 Preview</span>
+		<div class="ctrl-group">
+			<span class="ctrl-group-label">Layout</span>
+			<label>Mats <input type="number" id="matCount" value="4" min="1" max="8"></label>
+			<label>Cols <input type="number" id="colCount" value="2" min="1" max="4"></label>
+			<label>Align
+				<select id="valign">
+					<option value="start">Top</option>
+					<option value="center" selected>Center</option>
+					<option value="end">Bottom</option>
+				</select>
+			</label>
+			<label>Screen
+				<select id="aspectRatio">
+					<option value="fill">Fill</option>
+					<option value="16:9">16:9</option>
+					<option value="16:10">16:10</option>
+					<option value="4:3">4:3</option>
+					<option value="21:9">21:9</option>
+					<option value="32:9">32:9</option>
+				</select>
+			</label>
+		</div>
+		<div class="ctrl-group">
+			<span class="ctrl-group-label">Card</span>
+			<label>Font <input type="number" id="fontSize" value="16" min="8" max="32" step="1"></label>
+			<label>Colors
+				<select id="colorScheme">
+					<option value="default">Default</option>
+					<option value="green">Red / Green</option>
+					<option value="blue">Red / Blue</option>
+				</select>
+			</label>
+			<label>Upcoming <input type="number" id="upcomingDepth" value="2" min="0" max="2"></label>
+			<label>Team Wrap <input type="number" id="teamWrapRows" value="3" min="0" max="8"></label>
+			<label>Scores
+				<select id="teamScores">
+					<option value="off">Off</option>
+					<option value="bottom">Bottom</option>
+					<option value="top">Top</option>
+				</select>
+			</label>
+		</div>
+	</div>
+	<div class="ctrl-row">
+		<div class="ctrl-group">
+			<label>Logo URL <input type="text" id="logoPattern" value="https://tw-logos.s3.us-west-2.amazonaws.com/NCAAD12025/[teamAbbr]_Logo.png" placeholder="path/to/[teamAbbr]-logo.png"></label>
+		</div>
+	</div>
+	<div class="ctrl-row">
+		<div class="ctrl-group">
+			<button id="btnRandomize">Randomize</button>
+			<button id="btnSimulate">Sim Score</button>
+			<button id="btnRedraw">Sim Redraw</button>
+		</div>
+		<div class="ctrl-group">
+			<button id="btnExportHTML">Export HTML</button>
+			<button id="btnExportCSS">Export CSS</button>
+		</div>
+		<button id="btnReset" class="btn-reset">Reset</button>
+	</div>
 </div>
 
 <div class="toast" id="toast"></div>

@@ -42,48 +42,97 @@ body {
 	z-index: 100;
 	background: rgba(0,0,0,0.85);
 	backdrop-filter: blur(10px);
-	padding: 0.5em 1.5em;
+	padding: 0.3em 0.8em;
+	display: flex;
+	flex-direction: column;
+	gap: 0.25em;
+	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+	font-size: 11px;
+	color: #999;
+	border-bottom: 1px solid rgba(255,255,255,0.1);
+	white-space: nowrap;
+	overflow-x: auto;
+}
+.ctrl-row {
 	display: flex;
 	align-items: center;
-	gap: 1.5em;
-	font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-	font-size: 13px;
-	color: #aaa;
-	border-bottom: 1px solid rgba(255,255,255,0.1);
+	gap: 0.5em;
+	min-width: 0;
+}
+.ctrl-group {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding-left: 0.5em;
+	border-left: 1px solid rgba(255,255,255,0.1);
+}
+.ctrl-row > .ctrl-group:first-child,
+.ctrl-row > .title + .ctrl-group {
+	border-left: none;
+	padding-left: 0;
+}
+.ctrl-group-label {
+	font-size: 9px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: #555;
 }
 .preview-controls label {
 	display: flex;
 	align-items: center;
-	gap: 0.4em;
+	gap: 0.25em;
 }
 .preview-controls input[type="number"] {
-	background: #333;
-	color: #fff;
-	border: 1px solid #555;
-	border-radius: 4px;
-	padding: 0.3em 0.6em;
-	font-size: 13px;
-	width: 3.5em;
+	background: #2a2a2a;
+	color: #ddd;
+	border: 1px solid #444;
+	border-radius: 3px;
+	padding: 0.15em 0.3em;
+	font-size: 11px;
+	width: 2.8em;
 	text-align: center;
 }
-.preview-controls select,
+.preview-controls input[type="text"] {
+	background: #2a2a2a;
+	color: #ddd;
+	border: 1px solid #444;
+	border-radius: 3px;
+	padding: 0.15em 0.3em;
+	font-size: 11px;
+	flex: 1;
+	min-width: 20em;
+}
+.preview-controls select {
+	background: #2a2a2a;
+	color: #ddd;
+	border: 1px solid #444;
+	border-radius: 3px;
+	padding: 0.15em 0.3em;
+	font-size: 11px;
+	cursor: pointer;
+}
 .preview-controls button {
 	background: #333;
-	color: #fff;
+	color: #ccc;
 	border: 1px solid #555;
-	border-radius: 4px;
-	padding: 0.3em 0.6em;
-	font-size: 13px;
+	border-radius: 3px;
+	padding: 0.2em 0.5em;
+	font-size: 11px;
 	cursor: pointer;
 }
 .preview-controls button:hover { background: #444; }
-.preview-controls .export-sep { color: #555; }
+.preview-controls .btn-reset {
+	margin-left: auto;
+	color: #777;
+	border-color: #444;
+}
 .preview-controls .title {
 	font-weight: 700;
-	color: var(--ncaa-blue-bright);
+	color: #009EDE;
 	text-transform: uppercase;
 	letter-spacing: 0.1em;
-	font-size: 11px;
+	font-size: 10px;
 }
 
 /* --- TOAST --- */

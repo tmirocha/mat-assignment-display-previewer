@@ -41,6 +41,7 @@ function pickTwo(arr) {
 }
 
 export function randomizeData() {
+	const w2Code = Math.random() < 0.5 ? '#330099' : '#006600';
 	const matches = [];
 	for (let i = 0; i < 8; i++) {
 		const [t1, t2] = pickTwo(TEAMS);
@@ -55,8 +56,8 @@ export function randomizeData() {
 			boutType: pick(BOUT_TYPES),
 			boutNo: `${100 + i * 3 + Math.floor(Math.random() * 3)}`,
 			weight: `${weight}`,
-			w1Color: swapped ? '#006600' : '#CC0000',
-			w2Color: swapped ? '#CC0000' : '#006600',
+			w1Color: swapped ? w2Code : '#CC0000',
+			w2Color: swapped ? '#CC0000' : w2Code,
 			w1: { first: pick(FIRST_NAMES), last: pick(LAST_NAMES), team: t1, seed: Math.floor(Math.random() * 16) + 1, score: Math.floor(Math.random() * 12) },
 			w2: { first: pick(FIRST_NAMES), last: pick(LAST_NAMES), team: t2, seed: Math.floor(Math.random() * 16) + 1, score: Math.floor(Math.random() * 12) },
 			period: pick(PERIODS),

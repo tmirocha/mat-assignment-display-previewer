@@ -41,6 +41,11 @@
 	--columns: 1;
 	--font-size: 16;
 	--valign: center;
+	--card-radius: 0.5em;
+	--w1-color: #cc0000;
+	--w2-color: #00802b;
+	--green-display: #00802b;
+	--blue-display: #005EB8;
 
 	/* --- SIZING (tuned for export/production context) --- */
 	--header-bar-min-h: 2.1em;
@@ -60,6 +65,7 @@
 	--upcoming-bar-min-h: 1.9em;
 	--upcoming-label-fs: 1.1em;
 	--upcoming-matchup-fs: 1.3em;
+	--team-wrap-rows: 3;
 }
 
 /* --- DEFAULTS (empty/null fields) --- */
@@ -98,8 +104,10 @@ body {
 	font-size: calc(1.96vw / var(--columns) * var(--font-size) / 16);
 	margin: 0.4em 0.5em;
 	max-width: 100%;
+	border-radius: var(--card-radius);
 	overflow: hidden;
 	box-sizing: border-box;
+	contain: content;
 }
 
 /* --- NOISE TEXTURE (matches NCAA toolkit speckle pattern) --- */
@@ -118,7 +126,7 @@ body {
 
 /* --- MATCH CARD --- */
 .match-card {
-	border-radius: 0.5em;
+	border-radius: var(--card-radius);
 	overflow: hidden;
 	border: 2px solid rgba(193, 198, 200, 0.4);
 	background: var(--surface-card);
@@ -251,13 +259,13 @@ body {
 	width: 0.35em;
 	flex-shrink: 0;
 }
-.w1 .wrestler-color-bar { background: #cc0000; }
-.w2 .wrestler-color-bar { background: #00802b; }
+.w1 .wrestler-color-bar { background: var(--w1-color); }
+.w2 .wrestler-color-bar { background: var(--w2-color); }
 
 /* Data-driven color overrides (when wrestler colors swap) */
 .wrestler-row[data-color="#CC0000"] .wrestler-color-bar { background: #cc0000; }
-.wrestler-row[data-color="#006600"] .wrestler-color-bar { background: #00802b; }
-.wrestler-row[data-color="#330099"] .wrestler-color-bar { background: #330099; }
+.wrestler-row[data-color="#006600"] .wrestler-color-bar { background: var(--green-display); }
+.wrestler-row[data-color="#330099"] .wrestler-color-bar { background: var(--blue-display); }
 
 /* --- WRESTLER INFO --- */
 .wrestler-info {
@@ -335,25 +343,16 @@ body {
 	flex-shrink: 0;
 }
 
-/* Stacked layout: team name below wrestler name when fewer rows.
-   :not([data-rows]) fallback covers the brief window before onerror stamps it. */
-.outer-frame:not([data-rows]) .wrestler-details,
-.outer-frame[data-rows="1"] .wrestler-details,
-.outer-frame[data-rows="2"] .wrestler-details,
-.outer-frame[data-rows="3"] .wrestler-details {
+/* Stacked layout: team name below wrestler name when rows <= --team-wrap-rows.
+   data-team-stacked is stamped by JS (preview) and the onerror bootstrap (production). */
+.outer-frame[data-team-stacked] .wrestler-details {
 	flex-direction: column;
 	align-items: flex-start;
 	justify-content: center;
 	gap: 0;
 }
-.outer-frame:not([data-rows]) .wrestler-name,
-.outer-frame[data-rows="1"] .wrestler-name,
-.outer-frame[data-rows="2"] .wrestler-name,
-.outer-frame[data-rows="3"] .wrestler-name,
-.outer-frame:not([data-rows]) .team-name,
-.outer-frame[data-rows="1"] .team-name,
-.outer-frame[data-rows="2"] .team-name,
-.outer-frame[data-rows="3"] .team-name {
+.outer-frame[data-team-stacked] .wrestler-name,
+.outer-frame[data-team-stacked] .team-name {
 	max-width: 100%;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -402,13 +401,13 @@ body {
 	pointer-events: none;
 }
 
-.w1 .score-box { background: #cc0000; }
-.w2 .score-box { background: #00802b; }
+.w1 .score-box { background: var(--w1-color); }
+.w2 .score-box { background: var(--w2-color); }
 
 /* Data-driven color overrides (when wrestler colors swap) */
 .wrestler-row[data-color="#CC0000"] .score-box { background: #cc0000; }
-.wrestler-row[data-color="#006600"] .score-box { background: #00802b; }
-.wrestler-row[data-color="#330099"] .score-box { background: #330099; }
+.wrestler-row[data-color="#006600"] .score-box { background: var(--green-display); }
+.wrestler-row[data-color="#330099"] .score-box { background: var(--blue-display); }
 
 .score-value {
 	font-family: 'United Sans', 'Helvetica Neue', Arial, sans-serif;
@@ -500,6 +499,8 @@ body {
 .riding-time-display .ridingTime[data-value="0:00"] {
 	color: var(--text-primary);
 }
+.ridingTime[data-advantage="w1"] { color: var(--w1-color); }
+.ridingTime[data-advantage="w2"] { color: var(--w2-color); }
 
 /* --- UPCOMING BAR --- */
 .upcoming-bar {
@@ -799,9 +800,10 @@ ul.rotate > li:nth-child(4) { top: 300%; }
 	z-index: 200;
 	left: 0;
 	width: 100%;
-	/* 1.96vw/cols * 2.2 (--wrestler-name-fs) * 1.05 ≈ 4.53vw/cols
-	   Simplified — preview override in frame.html handles --font-size scaling. */
-	font-size: calc(4.53vw / var(--columns, 1)) !important;
+	/* Default matches JSP teamFont default (32px).  On export this becomes
+	   [teamFont]px so the JSP-configured value controls the size.
+	   Preview override in frame.html handles responsive scaling. */
+	font-size: 32px !important;
 	background:
 		linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
 		var(--surface-card) !important;
@@ -811,6 +813,15 @@ ul.rotate > li:nth-child(4) { top: 300%; }
 	font-weight: 900;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
+}
+
+.marquee-frame[data-position="top"] {
+	border-top: none;
+	border-bottom: 0.08em solid var(--ncaa-blue-bright);
+	box-shadow: 0 0.5em 2em rgba(0, 0, 0, 0.4);
+	background:
+		linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+		var(--surface-card) !important;
 }
 
 .marquee-frame table {
@@ -887,6 +898,7 @@ ul.rotate > li:nth-child(4) { top: 300%; }
 	align-items: var(--valign);
 	position: absolute;
 	width: 100%;
+	box-sizing: border-box;
 }
 
 /* Production vertical alignment — reads data-valign baked into exported HTML */

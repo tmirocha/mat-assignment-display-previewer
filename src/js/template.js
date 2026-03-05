@@ -17,7 +17,7 @@ export function getExportHTML() {
 	return exportTemplate;
 }
 
-export function fillTemplate(tpl, m, idx, depth) {
+export function fillTemplate(tpl, m, idx, depth, logoPattern) {
 	const map = {
 		'upcomingDepth': depth,
 		'mat': m.mat,
@@ -37,10 +37,12 @@ export function fillTemplate(tpl, m, idx, depth) {
 		'w2LastName': m.w2.last,
 		'w2Team': m.w2.team.name,
 		'w2TeamAbbr': m.w2.team.abbr,
+		'w1LogoUrl': logoPattern ? logoPattern.replace(/\[teamAbbr\]/g, m.w1.team.abbr) : '',
+		'w2LogoUrl': logoPattern ? logoPattern.replace(/\[teamAbbr\]/g, m.w2.team.abbr) : '',
 		'w2Score': '<div class="wScore w2Score" id="w2Score_prev' + idx + '" data-value="' + m.w2.score + '"><span>' + m.w2.score + '</span></div>',
 		'periodName': '<span class="periodName" data-value="' + m.period + '"><span>' + m.period + '</span></span>',
 		'clockTime': m.clock,
-		'ridingTime': '<span class="ridingTime" data-value="' + m.ridingTime + '"' + (m.ridingTime !== '0:00' ? ' style="color:' + (Math.random() < 0.5 ? '#cc0000' : '#00802b') + '"' : '') + '>' + m.ridingTime + '</span>',
+		'ridingTime': '<span class="ridingTime" data-value="' + m.ridingTime + '"' + (m.ridingTime !== '0:00' ? ' data-advantage="' + (Math.random() < 0.5 ? 'w1' : 'w2') + '"' : '') + '>' + m.ridingTime + '</span>',
 		'ondeck-boutNo': m.ondeck.boutNo,
 		'ondeck-weight': m.ondeck.weight,
 		'ondeck-w1FirstName': m.ondeck.w1.first,

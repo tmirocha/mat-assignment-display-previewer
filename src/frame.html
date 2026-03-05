@@ -28,7 +28,7 @@ body { margin: 0; overflow: hidden; display: flex; flex-direction: column; heigh
 }
 .match-card { width: 100%; }
 /* Override fixed positioning so marquee participates in flex flow */
-.marquee-frame { position: relative !important; bottom: auto !important; }
+.marquee-frame { position: relative !important; top: auto !important; bottom: auto !important; }
 /* Height-aware marquee sizing — mirrors .outer-frame min() logic scaled
    by the production marquee-to-card ratio (4.53 / 1.96 ≈ 2.31) so the
    preview accurately reflects how the marquee looks relative to cards. */

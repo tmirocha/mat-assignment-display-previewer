@@ -54,17 +54,29 @@ function renderMats() {
 	innerRoot.style.setProperty('--upcoming-bars', depth);
 	innerRoot.style.setProperty('--font-size', parseInt($('fontSize').value) || 16);
 	innerRoot.style.setProperty('--valign', $('valign').value);
-	const teamFrame = innerDoc.getElementById('teamFrame');
-	frame.innerHTML = '';
 
+	// Apply color scheme
+	const scheme = $('colorScheme').value;
+	const isBlue = scheme === 'blue';
+	const isGreen = scheme === 'green';
+	innerRoot.style.setProperty('--w2-color', isBlue ? '#005EB8' : '#00802b');
+	innerRoot.style.setProperty('--green-display', isBlue ? '#005EB8' : '#00802b');
+	innerRoot.style.setProperty('--blue-display', isGreen ? '#00802b' : '#005EB8');
+	const teamFrame = innerDoc.getElementById('teamFrame');
+	const logoPattern = $('logoPattern').value;
+	let html = '';
 	for (let i = 0; i < count; i++) {
-		frame.innerHTML += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth);
+		html += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth, logoPattern);
 	}
+	frame.innerHTML = html;
 	if (teamFrame) innerDoc.body.appendChild(teamFrame); // restore
 
 	// Derive row count from rendered cards / columns and stamp each card
+	const teamWrapRows = parseInt($('teamWrapRows').value) || 0;
 	frame.querySelectorAll('.outer-frame').forEach(function(el) {
 		el.dataset.rows = rows;
+		if (rows <= teamWrapRows) el.setAttribute('data-team-stacked', '');
+		else el.removeAttribute('data-team-stacked');
 	});
 
 	// Reset score registry so first poll stores current values without animating
@@ -128,24 +140,62 @@ function initTeamScores() {
 	const frame = innerDoc.createElement('div');
 	frame.id = 'teamFrame';
 	frame.className = 'marquee-frame';
-	frame.style.cssText = 'bottom:0;font-size:16px;display:none;';
+	frame.style.cssText = 'font-size:16px;display:none;';
 	frame.innerHTML = TEAM_SCORES_HTML;
 	parseMarqueeScores(frame.querySelector('marquee'));
 	innerDoc.body.appendChild(frame);
 }
 
 function toggleTeamScores() {
-	const checked = $('teamScores').checked;
+	const pos = $('teamScores').value;
 	const frame = innerDoc.getElementById('teamFrame');
-	if (frame) {
-		frame.style.display = checked ? '' : 'none';
+	if (!frame) return;
+	if (pos === 'off') {
+		frame.style.display = 'none';
+	} else {
+		frame.style.display = '';
+		// Preview uses flex flow (position: relative), so use order to place
+		// marquee above or below the grid. Production uses position: fixed.
+		frame.style.order = pos === 'top' ? '-1' : '';
+		frame.setAttribute('data-position', pos);
 	}
 	saveSettings();
 }
 
+// --- DOM Morph (mirrors bootstrap __mN/__mC for preview) ---
+function morphNode(old, next) {
+	if (old.nodeType !== next.nodeType || old.nodeName !== next.nodeName) {
+		old.parentNode.replaceChild(next.cloneNode(true), old);
+		return;
+	}
+	if (old.nodeType === 3) {
+		if (old.nodeValue !== next.nodeValue) old.nodeValue = next.nodeValue;
+		return;
+	}
+	if (old.nodeType !== 1) return;
+	for (let i = old.attributes.length - 1; i >= 0; i--) {
+		const name = old.attributes[i].name;
+		if (name === 'data-rows' || name === 'data-team-stacked') continue;
+		if (!next.hasAttribute(name)) old.removeAttribute(name);
+	}
+	for (let i = 0; i < next.attributes.length; i++) {
+		const a = next.attributes[i];
+		if (old.getAttribute(a.name) !== a.value) old.setAttribute(a.name, a.value);
+	}
+	morphChildren(old, next);
+}
+
+function morphChildren(parent, newParent) {
+	const oc = parent.childNodes, nc = newParent.childNodes;
+	while (oc.length > nc.length) parent.removeChild(parent.lastChild);
+	for (let i = 0; i < nc.length; i++) {
+		if (i >= oc.length) parent.appendChild(nc[i].cloneNode(true));
+		else morphNode(oc[i], nc[i]);
+	}
+}
+
 // --- Simulate Production Redraw ---
-// Mimics assignedMatchesReady(): replaces innerHTML, then stamps data-rows
-// on next frame (mirrors the <img onerror> immediate stamp in production).
+// Mirrors production: DOM morph (bootstrap __mC) + synchronous data-rows stamp.
 function simulateRedraw() {
 	const count = Math.max(1, Math.min(8, parseInt($('matCount').value) || 1));
 	const cols = Math.max(1, Math.min(4, parseInt($('colCount').value) || 1));
@@ -153,19 +203,26 @@ function simulateRedraw() {
 	const frame = innerDoc.getElementById('matAssignDisplayFrame');
 	const rows = Math.ceil(count / cols);
 
-	// Rebuild innerHTML just like production — no data-rows yet
 	const teamFrame = innerDoc.getElementById('teamFrame');
-	frame.innerHTML = '';
+	const logoPattern = $('logoPattern').value;
+	let html = '';
 	for (let i = 0; i < count; i++) {
-		frame.innerHTML += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth);
+		html += fillTemplate(CARD_TEMPLATE, mockMatches[i], i, depth, logoPattern);
 	}
+
+	// Morph existing DOM instead of innerHTML teardown — preserves elements,
+	// images, and CSS animations (same approach as bootstrap innerHTML override)
+	const temp = innerDoc.createElement('div');
+	temp.innerHTML = html;
+	morphChildren(frame, temp);
 	if (teamFrame) innerDoc.body.appendChild(teamFrame); // restore
 
-	// Stamp data-rows on next frame (production onerror fires before paint)
-	requestAnimationFrame(() => {
-		frame.querySelectorAll('.outer-frame').forEach(el => {
-			el.dataset.rows = rows;
-		});
+	// Stamp data-rows synchronously (before paint) to avoid layout snap
+	const teamWrapRows = parseInt($('teamWrapRows').value) || 0;
+	frame.querySelectorAll('.outer-frame').forEach(el => {
+		el.dataset.rows = rows;
+		if (rows <= teamWrapRows) el.setAttribute('data-team-stacked', '');
+		else el.removeAttribute('data-team-stacked');
 	});
 
 	resetScoreRegistry();
@@ -185,10 +242,25 @@ async function exportFile(type) {
 			const depth = parseInt($('upcomingDepth').value) || 0;
 			text = text.replace('[upcomingDepth]', depth);
 			text = text.replace('[valign]', $('valign').value);
+			const pattern = $('logoPattern').value;
+			text = text.replace('[w1LogoUrl]', pattern.replace(/\[teamAbbr\]/g, '[w1TeamAbbr]'));
+			text = text.replace('[w2LogoUrl]', pattern.replace(/\[teamAbbr\]/g, '[w2TeamAbbr]'));
 		}
 		if (type === 'css') {
 			text = text.replace('--columns: 1;', '--columns: [columns];');
+			text = text.replace('font-size: 32px !important;', 'font-size: [teamFont]px !important;');
 			text = text.replace('--font-size: 16;', '--font-size: [fontSize];');
+			const twr = parseInt($('teamWrapRows').value) || DEFAULTS.teamWrapRows;
+			text = text.replace('--team-wrap-rows: 3;', '--team-wrap-rows: ' + twr + ';');
+			const scheme = $('colorScheme').value;
+			const isBlue = scheme === 'blue';
+			const isGreen = scheme === 'green';
+			if (isBlue) {
+				text = text.replace('--w2-color: #00802b;', '--w2-color: #005EB8;');
+				text = text.replace('--green-display: #00802b;', '--green-display: #005EB8;');
+			} else if (isGreen) {
+				text = text.replace('--blue-display: #005EB8;', '--blue-display: #00802b;');
+			}
 		}
 		await navigator.clipboard.writeText(text);
 		showToast(label + ' copied to clipboard', 'success');
@@ -200,7 +272,8 @@ async function exportFile(type) {
 
 // --- Settings Persistence ---
 const SETTINGS_KEY = 'matDisplayPreviewSettings';
-const DEFAULTS = { mats: 4, columns: 2, upcoming: 2, fontSize: 16, valign: 'center', screen: 'fill' };
+const DEFAULT_LOGO_PATTERN = 'https://tw-logos.s3.us-west-2.amazonaws.com/NCAAD12025/[teamAbbr]_Logo.png';
+const DEFAULTS = { mats: 4, columns: 2, upcoming: 2, fontSize: 16, valign: 'center', screen: 'fill', colorScheme: 'default', teamWrapRows: 3, logoPattern: DEFAULT_LOGO_PATTERN };
 
 function saveSettings() {
 	try {
@@ -211,7 +284,10 @@ function saveSettings() {
 			fontSize: parseInt($('fontSize').value) || DEFAULTS.fontSize,
 			valign: $('valign').value,
 			screen: $('aspectRatio').value,
-			teamScores: $('teamScores').checked,
+			teamScores: $('teamScores').value,
+			colorScheme: $('colorScheme').value,
+			teamWrapRows: parseInt($('teamWrapRows').value),
+			logoPattern: $('logoPattern').value,
 		}));
 	} catch (e) { /* localStorage may be unavailable */ }
 }
@@ -231,7 +307,10 @@ function resetSettings() {
 	$('fontSize').value = DEFAULTS.fontSize;
 	$('valign').value = DEFAULTS.valign;
 	$('aspectRatio').value = DEFAULTS.screen;
-	$('teamScores').checked = false;
+	$('colorScheme').value = DEFAULTS.colorScheme;
+	$('teamWrapRows').value = DEFAULTS.teamWrapRows;
+	$('logoPattern').value = DEFAULTS.logoPattern;
+	$('teamScores').value = 'off';
 	toggleTeamScores();
 	renderMats();
 	applyAspectRatio();
@@ -294,7 +373,13 @@ async function init() {
 		if (saved.fontSize !== undefined) $('fontSize').value = saved.fontSize;
 		if (saved.valign) $('valign').value = saved.valign;
 		$('aspectRatio').value = saved.screen;
-		if (saved.teamScores) $('teamScores').checked = true;
+		if (saved.colorScheme) $('colorScheme').value = saved.colorScheme;
+		if (saved.teamWrapRows !== undefined) $('teamWrapRows').value = saved.teamWrapRows;
+		if (saved.logoPattern !== undefined) $('logoPattern').value = saved.logoPattern;
+		if (saved.teamScores && saved.teamScores !== 'off') {
+			// Backwards compat: old boolean true → 'bottom'
+			$('teamScores').value = saved.teamScores === true ? 'bottom' : saved.teamScores;
+		}
 	}
 
 	// Create team scores marquee inside iframe (hidden by default)
@@ -316,9 +401,12 @@ async function init() {
 	$('colCount').addEventListener('input', onRender);
 	$('upcomingDepth').addEventListener('input', onRender);
 	$('fontSize').addEventListener('input', onRender);
+	$('teamWrapRows').addEventListener('input', onRender);
 	$('valign').addEventListener('change', onRender);
 	$('aspectRatio').addEventListener('change', applyAspectRatio);
 
+	$('logoPattern').addEventListener('change', onRender);
+	$('colorScheme').addEventListener('change', onRender);
 	$('btnRandomize').addEventListener('click', () => {
 		mockMatches = randomizeData();
 		renderMats();
